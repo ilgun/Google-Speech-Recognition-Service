@@ -1,8 +1,14 @@
 package info.magnolia.speech;
 
+import static java.util.Optional.empty;
+
 import info.magnolia.speech.util.SoxClient;
 
 import java.util.List;
+import java.util.Optional;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.cloud.speech.spi.v1.SpeechClient;
 import com.google.cloud.speech.v1.RecognitionAudio;
@@ -14,6 +20,8 @@ import com.google.protobuf.ByteString;
 
 public class GoogleSpeechRecognitionService implements SpeechRecognitionService {
 
+    private static final Logger log = LoggerFactory.getLogger(GoogleSpeechRecognitionService.class);
+
     private final SoxClient soxClient;
 
     public GoogleSpeechRecognitionService() {
@@ -24,7 +32,7 @@ public class GoogleSpeechRecognitionService implements SpeechRecognitionService 
      * Does speech recognition by using {@link SpeechClient}.
      */
     @Override
-    public String recognise(byte[] wavData) {
+    public Optional<String> recognise(byte[] wavData) {
         ByteString monoAudioBytes = soxClient.convertWavToMono(wavData);
 
         try {
@@ -42,17 +50,18 @@ public class GoogleSpeechRecognitionService implements SpeechRecognitionService 
                 RecognizeResponse response = speechClient.recognize(config, audio);
                 List<SpeechRecognitionResult> results = response.getResultsList();
 
-                String translation = "No translation found";
                 for (SpeechRecognitionResult result : results) {
                     List<SpeechRecognitionAlternative> alternatives = result.getAlternativesList();
                     for (SpeechRecognitionAlternative alternative : alternatives) {
-                        translation = alternative.getTranscript();
+                        // TODO: should take care of other alternatives.
+                        return Optional.of(alternative.getTranscript());
                     }
                 }
-                return translation;
+                return empty();
             }
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            log.error("Exception occurred while doing speech recognition.", e);
+            return empty();
         }
     }
 }

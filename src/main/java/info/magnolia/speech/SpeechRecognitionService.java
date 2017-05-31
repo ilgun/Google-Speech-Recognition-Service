@@ -1,7 +1,9 @@
 package info.magnolia.speech;
 
 
+import java.util.Optional;
+
 public interface SpeechRecognitionService {
 
-    String recognise(byte[] wavData);
+    Optional<String> recognise(byte[] wavData);
 }
